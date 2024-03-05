@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/linux,python,django,macos,windows,git,terraform,redis
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,python,django,macos,windows,git,terraform,redis
 
+.gitignore
+
 ### Airflow
 # Airflow configuration
 airflow.cfg
@@ -8,6 +10,7 @@ airflow_login.py
 dbinit.py
 initdb.py
 secrets.py
+webserver_config.py
 
 # Airflow sqlite databases
 airflow.db
@@ -20,6 +23,10 @@ airflow/www/*.log
 airflow-webserver.pid
 standalone_admin_password.txt
 warnings.txt
+*.err
+*.pid
+*.out
+*.log
 
 ### Django ###
 *.log
