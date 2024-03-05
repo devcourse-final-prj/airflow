@@ -1,0 +1,30 @@
+name: Airflow Dags SYNC
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'dags/**'
+
+jobs:
+  sync_scheduler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRETE_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Sync Dags to AWS S3
+        run: |
+          aws s3 sync \
+            --region ap-northeast-2 \
+            ./dags s3://de-4-3-bucket/airflow/dags \
+            --delete
+            echo "S3 Sync complete!"
