@@ -138,7 +138,7 @@ def calculate_profit_loss(**kwargs):
 def save_to_s3(**kwargs):
 
     results = kwargs["ti"].xcom_pull(task_ids="calculate_profit_loss_task")
-    filename = "krx_calculation_data.json"
+    filename = "/home/ubuntu/airflow/data/file.json"
     with open(filename, "w") as f:
         json.dump(results, f)
 

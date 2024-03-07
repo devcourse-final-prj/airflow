@@ -139,7 +139,7 @@ def execute_and_save():
     results = calculate_profit_loss(price_data)
 
     # filename = f"results_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-    filename = "krx_calculation_data.json"
+    filename = "/home/ubuntu/airflow/data/file.json"
     with open(filename, "w") as f:
         json.dump(results, f)
 
