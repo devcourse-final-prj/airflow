@@ -32,6 +32,7 @@ def list_indices_and_stocks(market):
 
         index_search[indice_name] = tickers
 
+    print("### list_indices_and_stocks 가 완료되었습니다.")
     return index_search
 
 
@@ -79,6 +80,8 @@ def fetch_price_data():
 
             sector_prices[(stock_code, stock_name)] = stock_prices
         price_data[(index_code, sector_name)] = sector_prices
+
+    print("### fetch_price_data 가 완료되었습니다.")
     return price_data
 
 
@@ -126,6 +129,7 @@ def calculate_profit_loss(price_data):
         sector_results.append({"Remaining Balance": sector_remaining_balance})
         results[sector_name] = sector_results
 
+    print("### calculate_profit_loss 가 완료되었습니다. ")
     return results
 
 
@@ -143,6 +147,7 @@ def execute_and_save():
     s3_hook = S3Hook(aws_conn_id="s3_conn")
     bucket_name = "de-4-3-bucket/airflow/data"
     s3_hook.load_file(filename, key=filename, bucket_name=bucket_name, replace=True)
+    print("### save_to_s3 가 완료되었습니다. ")
 
 
 default_args = {
@@ -157,7 +162,7 @@ dag = DAG(
     "stock_analysis_dag",
     default_args=default_args,
     description="Fetch stock data, calculate profit/loss and save to S3",
-    schedule_interval="50 15 * * *",  # At 15:50 every day
+    schedule_interval="50 15 * * *",
 )
 
 execute_task = PythonOperator(
