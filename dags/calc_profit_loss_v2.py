@@ -136,16 +136,28 @@ def calculate_profit_loss(**kwargs):
 
 
 def save_to_s3(**kwargs):
-
+    """
+    ETL data s3에 저장
+    """
     results = kwargs["ti"].xcom_pull(task_ids="calculate_profit_loss_task")
-    filename = "/home/ubuntu/airflow/data/file.json"
-    with open(filename, "w") as f:
-        json.dump(results, f)
+    filename = "/home/ubuntu/airflow/data/krx_calculation_data_v2.json"
 
-    s3_hook = S3Hook(aws_conn_id="s3_conn")
-    bucket_name = "de-4-3-bucket/airflow/data"
-    s3_hook.load_file(filename, key=filename, bucket_name=bucket_name, replace=True)
-    print("### save_to_s3 가 완료되었습니다. ")
+    try:
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(results, f, ensure_ascii=False, indent=4)
+        print("### Json으로 저장.")
+    except TypeError as e:
+        print(f"Json으로 저장시 발생한 에러 : {e}")
+
+    try:
+        s3_hook = S3Hook(aws_conn_id="s3_conn")
+        bucket_name = "de-4-3-bucket"
+        s3_key = "airflow/data/file.json"
+
+        s3_hook.load_file(filename, key=s3_key, bucket_name=bucket_name, replace=True)
+        print("### save_to_s3 가 완료되었습니다.")
+    except Exception as e:
+        print(f"### S3에 업로드 시 발생한 에러 : {e}")
 
 
 default_args = {
