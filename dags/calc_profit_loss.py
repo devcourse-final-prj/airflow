@@ -152,7 +152,7 @@ def execute_and_save():
     try:
         s3_hook = S3Hook(aws_conn_id="s3_conn")
         bucket_name = "de-4-3-bucket"
-        s3_key = "airflow/data/file.json"
+        s3_key = "airflow/data/krx_calculation_data.json"
 
         s3_hook.load_file(filename, key=s3_key, bucket_name=bucket_name, replace=True)
         print("### save_to_s3 가 완료되었습니다.")
