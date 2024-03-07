@@ -46,7 +46,9 @@ def fetch_price_data(**kwargs):
     yesterday = (datetime.now() - timedelta(1)).strftime("%Y%m%d")
 
     price_data = {}
-    for (index_code, sector_name), stocks in indices_stocks.items():
+    for index_sector_key, stocks in indices_stocks.items():
+        index_code, sector_name = index_sector_key.split("_", 1)
+
         sector_prices = {}
         for stock_code, stock_name in stocks:
             ohlcv_today = stock.get_market_ohlcv_by_date(
