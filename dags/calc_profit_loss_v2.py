@@ -8,7 +8,6 @@ from pykrx import stock
 import time
 
 
-# 함수 정의 (위에 제공된 코드에서 함수 본문 생략)
 def list_indices_and_stocks(market, **kwargs):
     """
     주어진 시장에서 지수 및 주식 목록을 가져오는 함수
@@ -33,6 +32,7 @@ def list_indices_and_stocks(market, **kwargs):
 
         index_search[indice_name] = tickers
 
+    print("### list_indices_and_stocks 가 완료되었습니다.")
     return index_search
 
 
@@ -80,7 +80,8 @@ def fetch_price_data(**kwargs):
 
             sector_prices[(stock_code, stock_name)] = stock_prices
         price_data[(index_code, sector_name)] = sector_prices
-    # 함수 구현
+
+    print("### fetch_price_data 가 완료되었습니다.")
     return price_data
 
 
@@ -130,6 +131,7 @@ def calculate_profit_loss(**kwargs):
         sector_results.append({"Remaining Balance": sector_remaining_balance})
         results[sector_name] = sector_results
 
+    print("### calculate_profit_loss 가 완료되었습니다. ")
     return results
 
 
@@ -143,6 +145,7 @@ def save_to_s3(**kwargs):
     s3_hook = S3Hook(aws_conn_id="s3_conn")
     bucket_name = "de-4-3-bucket/airflow/data"
     s3_hook.load_file(filename, key=filename, bucket_name=bucket_name, replace=True)
+    print("### save_to_s3 가 완료되었습니다. ")
 
 
 default_args = {
