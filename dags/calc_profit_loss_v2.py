@@ -18,7 +18,7 @@ def list_indices_and_stocks(market, **kwargs):
     index_search = {}
     for idx in indices[1:18]:
         index_name = stock.get_index_ticker_name(idx)
-        indice_name = (idx, index_name.split()[1])
+        index_search_key = f"{idx}_{index_name.split()[1]}"
         stock_code = stock.get_index_portfolio_deposit_file(idx)
 
         stocks_name = []
@@ -30,7 +30,7 @@ def list_indices_and_stocks(market, **kwargs):
         for pair in zip(stock_code, stocks_name):
             tickers.append(pair)
 
-        index_search[indice_name] = tickers
+        index_search[index_search_key] = tickers
 
     print("### list_indices_and_stocks 가 완료되었습니다.")
     return index_search
@@ -196,6 +196,7 @@ with DAG(
     save_to_s3_task = PythonOperator(
         task_id="save_to_s3_task",
         python_callable=save_to_s3,
+        dag=dag,
     )
 
     (
