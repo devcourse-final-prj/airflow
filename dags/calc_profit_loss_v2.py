@@ -47,7 +47,9 @@ def fetch_price_data(**kwargs):
 
     price_data = {}
     for index_sector_key, stocks in indices_stocks.items():
-        index_code, sector_name = index_sector_key.split("_", 1)
+        parts = index_sector_key.split("_")
+        index_code = parts[0]
+        sector_name = "_".join(parts[1:])
 
         sector_prices = {}
         for stock_code, stock_name in stocks:
