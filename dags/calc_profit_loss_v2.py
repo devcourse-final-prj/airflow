@@ -47,9 +47,6 @@ def fetch_price_data(**kwargs):
 
     price_data = {}
     for index_sector_key, stocks in indices_stocks.items():
-        parts = index_sector_key.split("_")
-        index_code = parts[0]
-        sector_name = "_".join(parts[1:])
 
         sector_prices = {}
         for stock_code, stock_name in stocks:
@@ -83,7 +80,7 @@ def fetch_price_data(**kwargs):
                     ) / 2
 
             sector_prices[(stock_code, stock_name)] = stock_prices
-        price_data[(index_code, sector_name)] = sector_prices
+        price_data[index_sector_key] = sector_prices
 
     print("### fetch_price_data 가 완료되었습니다.")
     return price_data
@@ -99,11 +96,13 @@ def calculate_profit_loss(**kwargs):
 
     price_data = kwargs["ti"].xcom_pull(task_ids="fetch_price_data_task")
 
-    for (index_code, sector_name), stocks in price_data.items():
+    for index_sector_key, sector_prices in price_data.items():
+        index_code, sector_name = index_sector_key.split("_", 1)
+
         sector_results = []
         sector_remaining_balance = total_investment_per_sector
 
-        for (stock_code, stock_name), prices in stocks.items():
+        for (stock_code, stock_name), prices in sector_prices.items():
             stock_result = {
                 "종목코드": stock_code,
                 "종목명": stock_name,
