@@ -134,20 +134,31 @@ def calculate_profit_loss(price_data):
 
 
 def execute_and_save():
-
     price_data = fetch_price_data()
     results = calculate_profit_loss(price_data)
 
-    # filename = f"results_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+    # JSON으로 저장할 파일 경로
     filename = "/home/ubuntu/airflow/data/file.json"
-    with open(filename, "w") as f:
-        json.dump(results, f)
 
-    # S3 저장
-    s3_hook = S3Hook(aws_conn_id="s3_conn")
-    bucket_name = "de-4-3-bucket/airflow/data"
-    s3_hook.load_file(filename, key=filename, bucket_name=bucket_name, replace=True)
-    print("### save_to_s3 가 완료되었습니다. ")
+    # JSON으로 변환 및 파일 저장
+    try:
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(results, f, ensure_ascii=False, indent=4)
+        print("### Json으로 저장.")
+    except TypeError as e:
+        print(f"Json으로 저장시 발생한 에러 : {e}")
+
+    # S3에 저장
+    try:
+        s3_hook = S3Hook(aws_conn_id="s3_conn")
+        bucket_name = "de-4-3-bucket"
+        s3_key = "airflow/data/file.json"  # Bucket 내에서의 파일 경로
+
+        # load_file 메소드는 파일 경로 대신 파일명을 'key' 매개변수로 기대합니다.
+        s3_hook.load_file(filename, key=s3_key, bucket_name=bucket_name, replace=True)
+        print("### save_to_s3 가 완료되었습니다.")
+    except Exception as e:
+        print(f"### S3에 업로드 시 발생한 에러 : {e}")
 
 
 default_args = {
