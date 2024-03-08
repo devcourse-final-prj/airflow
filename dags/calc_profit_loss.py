@@ -148,6 +148,8 @@ def serialize_results(results):
         return results.isoformat()
     elif isinstance(results, decimal.Decimal):
         return float(results)
+    elif isinstance(results, (datetime.datetime, datetime.date)):
+        return results.isoformat()
     else:
         return results
 
