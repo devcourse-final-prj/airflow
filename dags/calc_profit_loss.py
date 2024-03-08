@@ -85,7 +85,7 @@ def fetch_price_data():
 
             sector_prices[(stock_code, stock_name)] = stock_prices
         price_data[(index_code, sector_name)] = sector_prices
-
+    print("### fetch_price_data 가 완료되었습니다.")
     return price_data
 
 
@@ -130,7 +130,8 @@ def calculate_profit_loss(price_data):
 
         sector_name = sector_info[1]
         results[sector_name] = sector_results
-
+    print("### 결과값 :", results)
+    print("### calculate_profit_loss 가 완료되었습니다.")
     return results
 
 
