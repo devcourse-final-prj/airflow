@@ -6,6 +6,7 @@ import json
 import pandas as pd
 from pykrx import stock
 import time
+import decimal
 
 
 def list_indices_and_stocks(market):
@@ -135,12 +136,29 @@ def calculate_profit_loss(price_data):
     return results
 
 
+def serialize_results(results):
+    """
+    모든 결과 값을 JSON 직렬화 가능한 형식으로 변환하는 함수
+    """
+    if isinstance(results, dict):
+        return {k: serialize_results(v) for k, v in results.items()}
+    elif isinstance(results, list):
+        return [serialize_results(v) for v in results]
+    elif isinstance(results, (datetime.datetime, datetime.date)):
+        return results.isoformat()
+    elif isinstance(results, decimal.Decimal):
+        return float(results)
+    else:
+        return results
+
+
 def execute_and_save():
     """
     ETL data s3에 저장
     """
     price_data = fetch_price_data()
-    results = calculate_profit_loss(price_data)
+    cal_results = calculate_profit_loss(price_data)
+    results = serialize_results(cal_results)
 
     filename = "/home/ubuntu/airflow/data/krx_calculation_data.json"
 
