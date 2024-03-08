@@ -43,93 +43,95 @@ def fetch_price_data():
     indices_stocks = list_indices_and_stocks("KRX")
     periods = [7, 14, 30, 90, 180, 365]
     today = datetime.now().strftime("%Y%m%d")
-    yesterday = (datetime.now() - timedelta(1)).strftime("%Y%m%d")
 
     price_data = {}
     for (index_code, sector_name), stocks in indices_stocks.items():
         sector_prices = {}
         for stock_code, stock_name in stocks:
+            stock_prices = {}
+
+            # 오늘의 OHLCV 데이터 추출
             ohlcv_today = stock.get_market_ohlcv_by_date(
                 fromdate=today, todate=today, ticker=stock_code
             )
-            ohlcv_yesterday = stock.get_market_ohlcv_by_date(
-                fromdate=yesterday, todate=yesterday, ticker=stock_code
-            )
-            time.sleep(0.5)
-
             current_price = (
                 ohlcv_today["종가"].iloc[-1]
-                if not ohlcv_today.empty and not pd.isna(ohlcv_today["종가"].iloc[-1])
-                else (
-                    ohlcv_yesterday["종가"].iloc[-1]
-                    if not ohlcv_yesterday.empty
-                    else None
-                )
+                if not ohlcv_today.empty and pd.notnull(ohlcv_today["종가"].iloc[-1])
+                else None
             )
+            stock_prices["현재가"] = current_price
 
-            stock_prices = {"현재가": current_price}
+            # 과거 날짜의 OHLCV 데이터 추출
             for period in periods:
-                past_date = (datetime.now() - timedelta(days=period)).strftime("%Y%m%d")
-                ohlcv_past = stock.get_market_ohlcv_by_date(
-                    fromdate=past_date, todate=past_date, ticker=stock_code
-                )
-                if not ohlcv_past.empty:
-                    stock_prices[f"{period}일전 값의 평균 기준"] = (
-                        ohlcv_past["시가"].iloc[-1] + ohlcv_past["종가"].iloc[-1]
-                    ) / 2
+                past_date = datetime.now() - timedelta(days=period)
+                average_price = None
+                for attempt in range(3):
+                    formatted_past_date = past_date.strftime("%Y%m%d")
+                    ohlcv_past = stock.get_market_ohlcv_by_date(
+                        fromdate=formatted_past_date,
+                        todate=formatted_past_date,
+                        ticker=stock_code,
+                    )
+                    if not ohlcv_past.empty and pd.notnull(ohlcv_past["종가"].iloc[-1]):
+                        average_price = (
+                            ohlcv_past["시가"].iloc[-1] + ohlcv_past["종가"].iloc[-1]
+                        ) / 2
+                        break
+                    past_date -= timedelta(days=1)
+
+                if average_price is None:
+                    average_price = 0
+                stock_prices[f"{period}일전 값의 평균 기준"] = average_price
 
             sector_prices[(stock_code, stock_name)] = stock_prices
         price_data[(index_code, sector_name)] = sector_prices
-
     print("### fetch_price_data 가 완료되었습니다.")
     return price_data
 
 
 def calculate_profit_loss(price_data):
     """
-    데이터 기반 손,수익 계산
+    이전 데이터 기반 투자 금액 손,수익 계산
     """
-    total_investment_per_sector = 10000000
     investment_per_stock = 2000000
     results = {}
 
-    for (index_code, sector_name), stocks in price_data.items():
+    for sector_info, stocks in price_data.items():
         sector_results = []
-        sector_remaining_balance = total_investment_per_sector
 
-        for (stock_code, stock_name), prices in stocks.items():
+        for stock_info, stock_prices in stocks.items():
             stock_result = {
-                "종목코드": stock_code,
-                "종목명": stock_name,
-                "현재가": prices.get("현재가"),
+                "종목코드": stock_info[0],
+                "종목명": stock_info[1],
+                "현재가": stock_prices.get("현재가"),
                 "수익": {},
-                "투자한 주식 수": None,
-                "투자 금액": None,
+                "투자 금액": {},
             }
 
-            for period in ["7일전", "14일전", "30일전", "90일전", "180일전", "365일전"]:
-                historical_price_key = f"{period}일전 값의 평균 기준"
-                if (
-                    historical_price_key in prices
-                    and prices[historical_price_key] is not None
-                ):
-                    num_shares = investment_per_stock // prices[historical_price_key]
-                    invested_amount = num_shares * prices[historical_price_key]
-                    sector_remaining_balance -= invested_amount
-
-                    if "현재가" in prices and prices["현재가"] is not None:
-                        current_value = num_shares * prices["현재가"]
-                        profit_loss = current_value - invested_amount
-                        stock_result["수익"][period] = profit_loss
-                        stock_result["투자한 주식 수"] = num_shares
-                        stock_result["투자 금액"] = invested_amount
+            for time_period in stock_prices.keys():
+                if "일전 값의 평균 기준" in time_period:
+                    historical_price = stock_prices[time_period]
+                    if historical_price == 0:
+                        stock_result["수익"][time_period] = 0
+                        stock_result["투자 금액"][time_period] = 0
+                    else:
+                        num_shares = investment_per_stock // historical_price
+                        invested_amount = num_shares * historical_price
+                        stock_result["투자 금액"][time_period] = invested_amount
+                        if stock_prices.get("현재가") is not None:
+                            current_value = num_shares * stock_prices["현재가"]
+                            stock_result["수익"][time_period] = (
+                                current_value - invested_amount
+                            )
+                        else:
+                            stock_result["수익"][time_period] = 0
 
             sector_results.append(stock_result)
 
-        sector_results.append({"Remaining Balance": sector_remaining_balance})
+        sector_name = sector_info[1]
         results[sector_name] = sector_results
-
-    print("### calculate_profit_loss 가 완료되었습니다. ")
+    print("### 결과값 :", results)
+    print("### calculate_profit_loss 가 완료되었습니다.")
     return results
 
 
