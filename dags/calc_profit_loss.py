@@ -178,7 +178,9 @@ def execute_and_save():
 default_args = {
     "owner": "hoon",
     "depends_on_past": False,
-    "start_date": datetime.combine(datetime.now().date(), datetime.min.time()),
+    "start_date": datetime.datetime.combine(
+        datetime.datetime.now().date(), datetime.datetime.min.time()
+    ),
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
 }
