@@ -1,25 +1,22 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.hooks.S3_hook import S3Hook
-from datetime import datetime, timedelta
-import json
-import pandas as pd
 from pykrx import stock
-import time
+from datetime import timedelta
+import pandas as pd
+import numpy as np
+import datetime
 import decimal
+import json
 
 
+# 기존에 제공된 종목 검색 함수
 def list_indices_and_stocks(market):
-    """
-    주어진 시장에서 지수 및 주식 목록을 가져오는 함수
-    해당 코드에서는 KRX를 사용. cf) fetch_price_data()
-    """
-
     indices = stock.get_index_ticker_list(market=market)
     index_search = {}
     for idx in indices[1:18]:
         index_name = stock.get_index_ticker_name(idx)
-        indice_name = (idx, index_name.split()[1])
+        indice_name = idx, index_name.split()[1]
         stock_code = stock.get_index_portfolio_deposit_file(idx)
 
         stocks_name = []
@@ -33,17 +30,13 @@ def list_indices_and_stocks(market):
 
         index_search[indice_name] = tickers
 
-    print("### list_indices_and_stocks 가 완료되었습니다.")
     return index_search
 
 
 def fetch_price_data():
-    """
-    특정 기간을 설정해서 해당 일자의 각 종목 별 OHLCV 값 LOAD
-    """
     indices_stocks = list_indices_and_stocks("KRX")
     periods = [7, 14, 30, 90, 180, 365]
-    today = datetime.now().strftime("%Y%m%d")
+    today = datetime.datetime.now().strftime("%Y%m%d")
 
     price_data = {}
     for (index_code, sector_name), stocks in indices_stocks.items():
@@ -64,7 +57,7 @@ def fetch_price_data():
 
             # 과거 날짜의 OHLCV 데이터 추출
             for period in periods:
-                past_date = datetime.now() - timedelta(days=period)
+                past_date = datetime.datetime.now() - timedelta(days=period)
                 average_price = None
                 for attempt in range(3):
                     formatted_past_date = past_date.strftime("%Y%m%d")
@@ -81,20 +74,16 @@ def fetch_price_data():
                     past_date -= timedelta(days=1)
 
                 if average_price is None:
-                    average_price = 0
+                    average_price = 0  # 데이터가 없으면 0 할당
                 stock_prices[f"{period}일전 값의 평균 기준"] = average_price
 
             sector_prices[(stock_code, stock_name)] = stock_prices
         price_data[(index_code, sector_name)] = sector_prices
-    print("### fetch_price_data 가 완료되었습니다.")
+
     return price_data
 
 
-def calculate_profit_loss(price_data):
-    """
-    이전 데이터 기반 투자 금액 손,수익 계산
-    """
-    investment_per_stock = 2000000
+def calculate_profit_loss(price_data, investment_per_stock=2000000):
     results = {}
 
     for sector_info, stocks in price_data.items():
@@ -112,13 +101,17 @@ def calculate_profit_loss(price_data):
             for time_period in stock_prices.keys():
                 if "일전 값의 평균 기준" in time_period:
                     historical_price = stock_prices[time_period]
+                    # If historical price is not available (0), no investment is made.
                     if historical_price == 0:
                         stock_result["수익"][time_period] = 0
                         stock_result["투자 금액"][time_period] = 0
                     else:
+                        # Calculate how many shares could be bought with the investment amount.
                         num_shares = investment_per_stock // historical_price
+                        # Calculate the invested amount for the specific period.
                         invested_amount = num_shares * historical_price
                         stock_result["투자 금액"][time_period] = invested_amount
+                        # If current price is available, calculate profit/loss.
                         if stock_prices.get("현재가") is not None:
                             current_value = num_shares * stock_prices["현재가"]
                             stock_result["수익"][time_period] = (
@@ -129,10 +122,10 @@ def calculate_profit_loss(price_data):
 
             sector_results.append(stock_result)
 
+        # Get the sector name from the sector_info tuple.
         sector_name = sector_info[1]
         results[sector_name] = sector_results
-    print("### 결과값 :", results)
-    print("### calculate_profit_loss 가 완료되었습니다.")
+
     return results
 
 
@@ -148,8 +141,8 @@ def serialize_results(results):
         return results.isoformat()
     elif isinstance(results, decimal.Decimal):
         return float(results)
-    elif isinstance(results, (datetime.datetime, datetime.date)):
-        return results.isoformat()
+    elif isinstance(results, (np.int32, np.int64)):  # numpy int 타입 추가
+        return int(results)
     else:
         return results
 
