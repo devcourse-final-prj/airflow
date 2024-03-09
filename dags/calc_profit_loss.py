@@ -34,7 +34,11 @@ def list_indices_and_stocks(market):
 def fetch_price_data():
     indices_stocks = list_indices_and_stocks("KRX")
     periods = [7, 14, 30, 90, 180, 365]
-    today = datetime.datetime.now().strftime("%Y%m%d")
+    today = datetime.datetime.now()
+    # 주말일 경우 금요일로 조정
+    if today.weekday() > 4:
+        today -= timedelta(days=today.weekday() - 4)
+    formatted_today = today
 
     price_data = {}
     for (index_code, sector_name), stocks in indices_stocks.items():
@@ -44,7 +48,9 @@ def fetch_price_data():
 
             # 오늘의 OHLCV 데이터 추출
             ohlcv_today = stock.get_market_ohlcv_by_date(
-                fromdate=today, todate=today, ticker=stock_code
+                fromdate=formatted_today.strftime("%Y%m%d"),
+                todate=formatted_today.strftime("%Y%m%d"),
+                ticker=stock_code,
             )
             current_price = (
                 ohlcv_today["종가"].iloc[-1]
@@ -55,7 +61,7 @@ def fetch_price_data():
 
             # 과거 날짜의 OHLCV 데이터 추출
             for period in periods:
-                past_date = datetime.datetime.now() - timedelta(days=period)
+                past_date = formatted_today - timedelta(days=period)
                 average_price = None
                 for attempt in range(3):
                     formatted_past_date = past_date.strftime("%Y%m%d")
@@ -99,17 +105,14 @@ def calculate_profit_loss(price_data, investment_per_stock=2000000):
             for time_period in stock_prices.keys():
                 if "일전 값의 평균 기준" in time_period:
                     historical_price = stock_prices[time_period]
-                    # If historical price is not available (0), no investment is made.
                     if historical_price == 0:
                         stock_result["수익"][time_period] = 0
                         stock_result["투자 금액"][time_period] = 0
                     else:
-                        # Calculate how many shares could be bought with the investment amount.
                         num_shares = investment_per_stock // historical_price
-                        # Calculate the invested amount for the specific period.
                         invested_amount = num_shares * historical_price
                         stock_result["투자 금액"][time_period] = invested_amount
-                        # If current price is available, calculate profit/loss.
+
                         if stock_prices.get("현재가") is not None:
                             current_value = num_shares * stock_prices["현재가"]
                             stock_result["수익"][time_period] = (
@@ -120,7 +123,6 @@ def calculate_profit_loss(price_data, investment_per_stock=2000000):
 
             sector_results.append(stock_result)
 
-        # Get the sector name from the sector_info tuple.
         sector_name = sector_info[1]
         results[sector_name] = sector_results
 
