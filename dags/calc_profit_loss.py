@@ -5,9 +5,7 @@ from pykrx import stock
 from datetime import timedelta
 import pandas as pd
 import numpy as np
-import datetime
-import decimal
-import json
+import datetime, decimal, json, os
 
 
 # 기존에 제공된 종목 검색 함수
@@ -156,6 +154,7 @@ def execute_and_save():
     results = serialize_results(cal_results)
 
     filename = "/home/ubuntu/airflow/data/krx_calculation_data.json"
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     try:
         with open(filename, "w", encoding="utf-8") as f:
