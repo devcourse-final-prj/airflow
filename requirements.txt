@@ -1,0 +1,16 @@
+pytest==7.4.3
+flake8==6.1.0
+mccabe==0.7.0
+pycodestyle==2.11.1
+pyflakes==3.1.0
+apache-airflow==2.8.0
+pendulum==2.0.0
+psycopg2==2.9.9
+pykrx
+yfinance==0.2.36
+pandas==1.4.1
+apache-airflow-providers-mysql
+apache-airflow-providers-amazon
+apache-airflow-providers-postgres
+apache-airflow-providers-slack
+PyMySQL==1.1.0
